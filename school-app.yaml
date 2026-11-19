@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:17
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "secret"
+        - name: POSTGRES_DB
+          value: "school"
+        # Optional: Add volume persistence if needed
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-school-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-school
+  template:
+    metadata:
+      name: backend-school
+      labels:
+        app: backend-school
+    spec:
+      containers:
+      - name: backend-school
+        image: ghcr.io/ezzeddinoth/backend-school:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: env-volume
+          mountPath: /root/.env
+          subPath: .env
+          readOnly: false
+      volumes:
+      - name: env-volume
+        configMap:
+          name: backend-env-file
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-school-service
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30080
+  selector:
+    app: backend-school
