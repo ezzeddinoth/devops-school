@@ -1,11 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-school-deployment
+  labels:
+    app: frontend-school
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-school
+  template:
+    metadata:
+      labels:
+        app: frontend-school
+    spec:
+      containers:
+        - name: frontend-school
+          image: ghcr.io/ezzeddinoth/frontend-school:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: env-volume
+              mountPath: /root/.env
+              subPath: .env
+              readOnly: false
+      volumes:
+        - name: env-volume
+          configMap:
+            name: frontend-env-file
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-school-service
+spec:
+  selector:
+    app: frontend-school
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
 apiVersion: v1
 kind: Service
 metadata:
   name: postgres
 spec:
   ports:
-  - port: 5432
-    targetPort: 5432
+    - port: 5432
+      targetPort: 5432
   selector:
     app: postgres
 ---
@@ -24,18 +69,18 @@ spec:
         app: postgres
     spec:
       containers:
-      - name: postgres
-        image: postgres:17
-        ports:
-        - containerPort: 5432
-        env:
-        - name: POSTGRES_USER
-          value: "postgres"
-        - name: POSTGRES_PASSWORD
-          value: "secret"
-        - name: POSTGRES_DB
-          value: "school"
-        # Optional: Add volume persistence if needed
+        - name: postgres
+          image: postgres:17
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "secret"
+            - name: POSTGRES_DB
+              value: "school"
+            # Optional: Add volume persistence if needed
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -53,20 +98,20 @@ spec:
         app: backend-school
     spec:
       containers:
-      - name: backend-school
-        image: ghcr.io/ezzeddinoth/backend-school:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
-        volumeMounts:
-        - name: env-volume
-          mountPath: /root/.env
-          subPath: .env
-          readOnly: false
+        - name: backend-school
+          image: ghcr.io/ezzeddinoth/backend-school:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: env-volume
+              mountPath: /root/.env
+              subPath: .env
+              readOnly: false
       volumes:
-      - name: env-volume
-        configMap:
-          name: backend-env-file
+        - name: env-volume
+          configMap:
+            name: backend-env-file
 ---
 apiVersion: v1
 kind: Service
@@ -75,8 +120,8 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - port: 8080
-    targetPort: 8080
-    nodePort: 30080
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
   selector:
     app: backend-school
